@@ -1,0 +1,84 @@
+datasource db {
+  provider = "postgresql" // ubah ke "postgresql" jika pakai Postgres
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  SICK
+  LEAVE
+}
+
+enum UserRole {
+  ADMIN
+  MANAGER
+  STAFF
+}
+
+model Department {
+  id         Int        @id @default(autoincrement())
+  name       String
+  code       String?    @unique
+  employees  Employee[]
+
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+}
+
+model Employee {
+  id             Int          @id @default(autoincrement())
+  employeeNumber String       @unique
+  name           String
+  email          String? 
+  phone          String?
+  position       String?
+  hireDate       DateTime?
+  isActive       Boolean      @default(true)
+
+  departmentId   Int?
+  department     Department?  @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+
+  attendances    Attendance[]
+  user           User?
+
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
+model Attendance {
+  id             Int              @id @default(autoincrement())
+  employeeId     Int
+  attendanceDate DateTime         // store date normalized to midnight (date-only semantics)
+  checkIn        DateTime?
+  checkOut       DateTime?
+  status         AttendanceStatus @default(PRESENT)
+  note           String?
+
+  employee       Employee         @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  @@unique([employeeId, attendanceDate])
+  @@index([attendanceDate])
+  @@index([employeeId])
+}
+
+model User {
+  id         Int      @id @default(autoincrement())
+  username   String   @unique
+  password   String   // store hashed password
+  role       UserRole @default(STAFF)
+  active     Boolean  @default(true)
+
+  employeeId Int?
+  employee   Employee? @relation(fields: [employeeId], references: [id], onDelete: SetNull)
+
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+}

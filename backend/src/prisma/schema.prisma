@@ -1,0 +1,52 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==== MODELS ====
+
+model User {
+  id        Int       @id @default(autoincrement())
+  name      String
+  email     String    @unique
+  password  String
+  role      Role      @default(PETUGAS)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  absensi   Absensi[]
+}
+
+model Absensi {
+  id        Int        @id @default(autoincrement())
+  userId    Int
+  tanggal   DateTime    @default(now())
+  status    Status      @default(HADIR)
+  lokasi    String?     // opsional: simpan lokasi scan
+  deviceId  String?     // opsional: identitas device scanner
+  note      String?     // opsional: keterangan (izin, sakit, dsb)
+
+  user      User        @relation(fields: [userId], references: [id])
+
+  @@index([userId, tanggal])
+  @@index([tanggal])
+}
+
+enum Role {
+  ADMIN
+  PETUGAS
+}
+
+enum Status {
+  HADIR
+  TERLAMBAT
+  IZIN
+  SAKIT
+  ALPA
+}
